@@ -1,0 +1,24 @@
+{
+  "name": "zhuyin-focus",
+  "version": "1.0.0",
+  "description": "专注节律 · 随机提示音专注法 —— 桌面版",
+  "main": "main.js",
+  "author": "林澈",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.linche.zhuyin",
+    "productName": "专注节律",
+    "directories": { "output": "dist" },
+    "win": { "target": ["nsis"], "icon": "icons/icon-512.png" },
+    "mac": { "target": ["dmg"], "icon": "icons/icon-512.png", "category": "public.app-category.productivity" },
+    "linux": { "target": ["AppImage"], "icon": "icons/icon-512.png" }
+  }
+}

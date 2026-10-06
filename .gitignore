@@ -1,0 +1,7 @@
+# 依赖与构建产物（桌面版 Electron 打包用，不要提交）
+node_modules/
+dist/
+
+# 系统文件
+.DS_Store
+Thumbs.db
