@@ -3,9 +3,11 @@
 一个网页版「学习辅助器」，把「随机提示音专注法」做成了可用的工具：
 
 - 专注期间，提示音会在 **3~5 分钟内的随机时刻**响起（不可预测，但有 5 分钟保底）。
-- 听到提示音 → 闭眼休息 **10 秒** → 继续，如此循环。
+- 听到提示音 → 闭眼休息 **10 秒** → 休息结束时**第二声提示音**响起 → 继续，如此循环。
+  （两声提示音旋律方向相反：进入休息是上行，休息结束是下行，可纯凭听觉区分。）
 - 约 **90 分钟**后进入 **20 分钟**长休息，之后自动下一轮。
 - 纯前端、零依赖、无服务器，数据只存在你自己的浏览器里。
+- **计时进度会自动保存**：误刷新 / 重开页面可恢复本轮进度（12 小时内的快照有效）。
 
 ## 快速开始
 
@@ -103,12 +105,14 @@ study-assistant/
 | 方法要点 | 代码位置 |
 | --- | --- |
 | 随机专注期（3~5 分钟） | `timer.js` 的 `randomFocus()` |
-| 保底机制（到点必响） | `randomFocus()` 里的 `max` 上限 |
+| 保底机制（到点必响） | `randomFocus()` 的 `clampFocusMax()`（上限还会受学习循环 60% 约束） |
 | 10 秒微休息 | `timer.js` 的 `startMicroRest()` |
+| 休息开始 / 结束两声提示音 | `audio.js` 的 `PATTERNS.restStart` / `PATTERNS.restEnd`（旋律方向相反） |
 | 90 分钟长循环 + 20 分钟长休息 | `timer.js` 的 `sessionDone()` / `startLongRest()` |
-| 后台继续计时 + 按时响铃 | `timer.js` 预排定 `sound {type,at}` + `audio.js` 的 `schedule`/`startKeepAlive` |
+| 后台继续计时 + 按时响铃 | `timer.js` 以 `_phaseEndsAt` 统一排定 + `audio.js` 的 `schedule()`（音频时钟基准 + 迟到保护） |
 | 屏幕常亮 | `app.js` 的 `requestWakeLock()` |
-| 数据持久化 | `storage.js` |
+| 进度持久化（刷新可恢复） | `timer.js` 的 `persist()` / `restoreState()` |
+| 数据持久化 | `storage.js`（含数值范围钳制与类型校验） |
 
 ## 已知限制
 

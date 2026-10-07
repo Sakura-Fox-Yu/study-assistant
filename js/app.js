@@ -156,10 +156,15 @@
   }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      // 切后台：开保活音，防止 AudioContext 被挂起导致排定的声音不响
       if (isTiming()) FR.Audio.startKeepAlive();
     } else {
+      // 回前台：关保活音、恢复屏幕常亮，并重新排定当前阶段剩余的声音。
+      // 【修复】系统可能在休眠期间挂起音频上下文，回来后必须重排一次，
+      //   否则「休息结束」这一声会丢失（用户报告的「只响一次」）。
       FR.Audio.stopKeepAlive();
       if (FR.settings && FR.settings.wakeLock) requestWakeLock();
+      if (isTiming()) Timer.rescheduleSound();
     }
   });
 
@@ -194,10 +199,26 @@
       const lim = FR.CONFIG.LIMITS[f.key];
       const row = document.createElement('div');
       row.className = 'field';
-      row.innerHTML =
-        '<div class="field-head"><label>' + f.label + '</label>' +
-        '<span class="field-val" data-val="' + f.key + '"></span></div>' +
-        '<input type="range" data-key="' + f.key + '" min="' + lim.min + '" max="' + lim.max + '" step="' + lim.step + '">';
+
+      const head = document.createElement('div');
+      head.className = 'field-head';
+      const label = document.createElement('label');
+      label.textContent = f.label;
+      const val = document.createElement('span');
+      val.className = 'field-val';
+      val.dataset.val = f.key;
+      head.appendChild(label);
+      head.appendChild(val);
+
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.dataset.key = f.key;
+      input.min = lim.min;
+      input.max = lim.max;
+      input.step = lim.step;
+
+      row.appendChild(head);
+      row.appendChild(input);
       numBox.appendChild(row);
     });
 
@@ -206,7 +227,13 @@
     TOGGLES.forEach(f => {
       const row = document.createElement('label');
       row.className = 'toggle-row';
-      row.innerHTML = '<span>' + f.label + '</span><input type="checkbox" data-key="' + f.key + '">';
+      const span = document.createElement('span');
+      span.textContent = f.label;
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.dataset.key = f.key;
+      row.appendChild(span);
+      row.appendChild(input);
       togBox.appendChild(row);
     });
 
@@ -261,8 +288,13 @@
       const day = stats.days[k] || { focusSeconds: 0, sessions: 0 };
       const row = document.createElement('div');
       row.className = 'hist-row';
-      row.innerHTML = '<span>' + (i === 0 ? '今天' : k.slice(5)) + '</span>' +
-        '<span>' + fmtMinutes(day.focusSeconds) + '</span><span>' + day.sessions + ' 循环</span>';
+      const c1 = document.createElement('span');
+      c1.textContent = i === 0 ? '今天' : k.slice(5);
+      const c2 = document.createElement('span');
+      c2.textContent = fmtMinutes(day.focusSeconds);
+      const c3 = document.createElement('span');
+      c3.textContent = day.sessions + ' 循环';
+      row.appendChild(c1); row.appendChild(c2); row.appendChild(c3);
       list.appendChild(row);
     }
   }
@@ -297,10 +329,24 @@
       toast('已恢复默认设置');
     });
 
+    // 【修复 C】刷新 / 重开页面时恢复本轮进度（12 小时内的快照有效）
+    const restored = Timer.restoreState();
+    if (restored) {
+      const snap = Timer.snapshot();
+      if (snap.phase !== 'idle') {
+        toast('已恢复上次的计时进度');
+        if (FR.settings.wakeLock) requestWakeLock();
+      }
+    }
+
     render(Timer.snapshot());
   }
 
   init();
+
+  // 【修复 C】页面卸载前保存一次进度，降低刷新/意外关闭丢数据的概率
+  window.addEventListener('beforeunload', () => { Timer.persistNow(); });
+  window.addEventListener('pagehide', () => { Timer.persistNow(); });
 
   // 演示模式：URL 带 ?demo=1 时自动开始计时（用于截图 / 作品集演示）
   if (/[?&]demo=1/.test(location.search)) {

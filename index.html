@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- 内容安全策略：本应用纯本地、无外链、无内联脚本，因此可收紧为 self。
+     注意 style 需要 'unsafe-inline'，因为 app.js 里有 el.xxx.style.width 之类的行内样式。 -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>专注节律 · 随机提示音专注法</title>
 <meta name="description" content="基于随机提示音专注法的学习辅助器：随机专注期 + 保底提示音 + 微休息 + 90 分钟长循环。" />
 <meta name="theme-color" content="#0b0b0e" />

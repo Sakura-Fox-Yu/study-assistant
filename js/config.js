@@ -25,9 +25,13 @@
   };
 
   // 每个数字参数的取值范围（供设置面板的滑块使用）
+  //
+  // 【修复】旧版 focusMin/focusMax 上限为 3600 秒（60 分钟），可被调到让
+  //   「5 分钟保底」完全失效。现收紧上限为 900 秒（15 分钟），并在
+  //   timer.js 的 clampFocusMax() 里再加一层「不超过学习循环 60%」的硬约束。
   const LIMITS = {
-    focusMin:  { min: 20,   max: 3600, step: 10,    unit: '秒'   },
-    focusMax:  { min: 20,   max: 3600, step: 10,    unit: '秒'   },
+    focusMin:  { min: 20,   max: 900,  step: 10,    unit: '秒'   },
+    focusMax:  { min: 20,   max: 900,  step: 10,    unit: '秒'   },
     microRest: { min: 3,    max: 120,  step: 1,     unit: '秒'   },
     longCycle: { min: 10,   max: 240,  step: 5,     unit: '分钟' },
     longRest:  { min: 5,    max: 120,  step: 5,     unit: '分钟' },
