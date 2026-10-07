@@ -75,6 +75,10 @@ pnpm run dist       # 或 npm run dist
 
 右上角可查看「**方法**」说明、「**统计**」数据、「**设置**」参数。
 
+**关于「重置」**：重置只重置当前这轮计时，**不会丢弃你已经专注的时长**——那段时间会
+记入统计并标记为「未完成」。统计里每条记录右侧都有 ✕，可以随时删掉记错的那条；
+「统计」面板底部另有「清空所有统计数据」（需二次确认），用来彻底清空历史。
+
 ## 目录结构 & 代码导读（学习路线）
 
 ```
@@ -112,7 +116,9 @@ study-assistant/
 | 后台继续计时 + 按时响铃 | `timer.js` 以 `_phaseEndsAt` 统一排定 + `audio.js` 的 `schedule()`（音频时钟基准 + 迟到保护） |
 | 屏幕常亮 | `app.js` 的 `requestWakeLock()` |
 | 进度持久化（刷新可恢复） | `timer.js` 的 `persist()` / `restoreState()` |
-| 数据持久化 | `storage.js`（含数值范围钳制与类型校验） |
+| 重置时结算本轮时长 | `timer.js` 的 `reset()` → `sessionSettled` 事件 → `app.js` 落库 |
+| 统计明细与单条删除 | `storage.js` 的 `getRecords` / `deleteRecord` / `summarize` |
+| 数据持久化 | `storage.js`（含数值范围钳制、类型校验、旧结构自动迁移） |
 
 ## 已知限制
 

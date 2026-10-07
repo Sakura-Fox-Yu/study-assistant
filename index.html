@@ -108,13 +108,17 @@
       </div>
       <div class="stat-grid">
         <div class="stat-card"><div class="stat-num" id="st-today-focus">0.0分</div><div class="stat-label">今日专注</div></div>
-        <div class="stat-card"><div class="stat-num" id="st-today-sessions">0</div><div class="stat-label">今日循环</div></div>
-        <div class="stat-card"><div class="stat-num" id="st-today-micro">0</div><div class="stat-label">今日微休息</div></div>
+        <div class="stat-card"><div class="stat-num" id="st-today-sessions">0</div><div class="stat-label">今日完整循环</div></div>
+        <div class="stat-card"><div class="stat-num" id="st-today-partials">0</div><div class="stat-label">今日未完成</div></div>
         <div class="stat-card"><div class="stat-num" id="st-all-focus">0.0分</div><div class="stat-label">累计专注</div></div>
-        <div class="stat-card" style="grid-column: span 2"><div class="stat-num" id="st-all-sessions">0</div><div class="stat-label">累计完成循环</div></div>
+        <div class="stat-card" style="grid-column: span 2"><div class="stat-num" id="st-all-sessions">0</div><div class="stat-label">累计完整循环</div></div>
       </div>
-      <div class="hist-head"><span>日期</span><span>专注</span><span>循环</span></div>
-      <div id="st-history"></div>
+
+      <div class="hist-head"><span>记录（点击 ✕ 可删除）</span><span id="st-count"></span></div>
+      <div id="st-records"></div>
+
+      <hr class="divider" />
+      <button class="ghost danger" id="btn-clear-stats" style="width:100%">清空所有统计数据</button>
     </div>
   </div>
 

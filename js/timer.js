@@ -330,8 +330,27 @@
     emitter.emit('phaseChange', snapshot());
   }
 
+  // 【修复】重置前先结算本轮已产生的专注时长。
+  //   旧版 reset() 直接清零，导致「专注 40 分钟后点重置」这 40 分钟凭空蒸发。
+  //   现在：若本轮有专注时长，发 settled 事件让 UI 落库并标记为 partial，
+  //   阈值跟随用户设定的 longCycle（未跑满一个循环的都算半截），不再硬编码 90 分钟。
   function reset() {
+    const focusSeconds = T._focusElapsed / 1000;
+    const microRests = T._microRests;
+    const wasActive = (T.phase === 'focus' || T.phase === 'microRest' ||
+                       T.phase === 'longRest' || T.phase === 'paused');
+    // 落库阈值：跑满一个学习循环才算完整；否则按半截记录（由 UI 决定是否真的写入）
+    const fullCycle = FR.settings.longCycle * 60;
+    const partial = focusSeconds > 0 && focusSeconds < fullCycle;
+
     stopTimer();
+    const payload = {
+      focusSeconds,
+      microRests,
+      partial,
+      wasActive,
+    };
+
     T.phase = 'idle';
     T._pausedFrom = null;
     T._sessionElapsed = 0; T._focusElapsed = 0; T._focusPeriodElapsed = 0;
@@ -339,6 +358,8 @@
     T._soundAt = 0;
     try { localStorage.removeItem(STATE_KEY); } catch (e) {}
     emitter.emit('soundCancel');
+    // 先结算，再通知 UI 刷新，保证 toast 与统计数字一致
+    if (wasActive && focusSeconds > 0) emitter.emit('sessionSettled', payload);
     emitter.emit('phaseChange', snapshot());
   }
 

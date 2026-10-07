@@ -182,6 +182,44 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   color: var(--muted); font-family: var(--mono);
 }
 
+/* ---------- 统计明细列表 ---------- */
+.rec-empty {
+  padding: 18px 4px; font-size: 13px; color: var(--dim); text-align: center;
+}
+.rec-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 9px 4px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.rec-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rec-time {
+  font-family: var(--mono); font-size: 14px; font-weight: 600;
+  color: var(--text); min-width: 62px;
+}
+.rec-meta {
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rec-tag {
+  font-size: 11px; padding: 2px 7px; border-radius: 999px;
+  background: rgba(232, 163, 61, .14); color: var(--accent); white-space: nowrap;
+}
+.rec-tag.partial {
+  background: rgba(155, 154, 164, .16); color: var(--muted);
+}
+.rec-del {
+  flex: none; width: 26px; height: 26px; border-radius: 8px;
+  background: var(--surface); color: var(--dim);
+  border: 1px solid var(--line); font-size: 12px; line-height: 1;
+  transition: .15s;
+}
+.rec-del:hover {
+  color: #ff8f8f; border-color: rgba(255, 143, 143, .5);
+  background: rgba(255, 143, 143, .1);
+}
+.ghost.danger { color: #ff8f8f; border-color: rgba(255, 143, 143, .3); }
+.ghost.danger:hover { color: #ffb3b3; border-color: rgba(255, 143, 143, .6); }
+
 /* ---------- 帮助说明 ---------- */
 .help h3 { font-size: 14px; color: var(--accent); margin: 16px 0 6px; }
 .help ol { padding-left: 20px; color: var(--muted); font-size: 14px; }

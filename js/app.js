@@ -104,8 +104,7 @@
     el.mCycles.textContent = String(snap.cycles);
 
     // 今日专注 = 已记录的今日 + 本轮尚未记入的实时专注
-    const stats = Storage.loadStats();
-    const today = stats.days[Storage.todayKey()] || { focusSeconds: 0 };
+    const today = Storage.getToday();
     el.mToday.textContent = fmtMinutes(today.focusSeconds + Math.round(snap.focusElapsedMs / 1000));
   }
 
@@ -115,8 +114,18 @@
   Timer.on('sound', ({ type, at }) => FR.Audio.schedule(type, at));
   Timer.on('soundCancel', () => FR.Audio.cancelScheduled());
   Timer.on('sessionComplete', d => {
-    Storage.recordSessionComplete(d.focusSeconds, d.microRests);
+    Storage.recordSessionComplete(d.focusSeconds, d.microRests, d.cycles);
     toast('完成第 ' + d.cycles + ' 个学习循环！进入 ' + FR.settings.longRest + ' 分钟长休息');
+  });
+
+  // 【新增】中途重置时的结算：把本轮已产生的专注时长写入明细并标记为「未完成」，
+  // 避免「专注 40 分钟后点重置，那 40 分钟凭空蒸发」。
+  Timer.on('sessionSettled', d => {
+    // 低于最短时长（误触）的记录会被 Storage 层过滤掉，此时不提示
+    const secs = Math.round(d.focusSeconds);
+    if (secs < 10) { toast('已重置'); return; }
+    Storage.recordPartial(d.focusSeconds, d.microRests);
+    toast('已记录本轮专注 ' + fmtMinutes(d.focusSeconds) + '（未完成）');
   });
 
   // ---------- 按钮 ----------
@@ -128,10 +137,20 @@
   });
 
   el.btnReset.addEventListener('click', () => {
-    Timer.reset();
+    const snap = Timer.snapshot();
+    const active = (snap.phase === 'focus' || snap.phase === 'microRest' ||
+                    snap.phase === 'longRest' || snap.phase === 'paused');
+    const secs = Math.round(snap.focusElapsedMs / 1000);
+    // 有待结算的时长时先确认，让用户知道这轮不会被丢掉
+    if (active && secs > 0) {
+      const mins = fmtMinutes(secs);
+      if (!confirm('重置本轮计时？\n\n已专注 ' + mins + '，将记入统计并标记为「未完成」。')) return;
+    }
+    Timer.reset();   // reset 内部会发 sessionSettled，由监听器落库
     releaseWakeLock();
     FR.Audio.stopKeepAlive();
-    toast('已重置');
+    if (!(active && secs > 0)) toast('已重置');
+    render(Timer.snapshot());
   });
 
   // ---------- 屏幕常亮（Wake Lock） ----------
@@ -269,34 +288,76 @@
 
   // ---------- 统计面板 ----------
   function renderStats() {
-    const stats = Storage.loadStats();
-    const today = stats.days[Storage.todayKey()] || { focusSeconds: 0, sessions: 0, microRests: 0 };
+    const summary = Storage.getSummary();
+    const today = Storage.getToday();
     const live = Timer.snapshot();
+    // 今日专注 = 已落库的今日 + 本轮尚未落库的实时专注
     const todayFocus = today.focusSeconds + Math.round(live.focusElapsedMs / 1000);
 
     $('st-today-focus').textContent = fmtMinutes(todayFocus);
     $('st-today-sessions').textContent = today.sessions;
-    $('st-today-micro').textContent = today.microRests;
-    $('st-all-focus').textContent = fmtMinutes(stats.allTime.focusSeconds);
-    $('st-all-sessions').textContent = stats.allTime.sessions;
+    $('st-today-partials').textContent = today.partials;
+    $('st-all-focus').textContent = fmtMinutes(summary.allTime.focusSeconds);
+    $('st-all-sessions').textContent = summary.allTime.sessions;
 
-    const list = $('st-history');
+    const list = $('st-records');
     list.innerHTML = '';
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 86400000);
-      const k = Storage.dateKey(d);
-      const day = stats.days[k] || { focusSeconds: 0, sessions: 0 };
-      const row = document.createElement('div');
-      row.className = 'hist-row';
-      const c1 = document.createElement('span');
-      c1.textContent = i === 0 ? '今天' : k.slice(5);
-      const c2 = document.createElement('span');
-      c2.textContent = fmtMinutes(day.focusSeconds);
-      const c3 = document.createElement('span');
-      c3.textContent = day.sessions + ' 循环';
-      row.appendChild(c1); row.appendChild(c2); row.appendChild(c3);
-      list.appendChild(row);
+    const records = Storage.getRecords();
+    $('st-count').textContent = records.length ? '共 ' + records.length + ' 条' : '';
+
+    if (!records.length) {
+      const empty = document.createElement('div');
+      empty.className = 'rec-empty';
+      empty.textContent = '还没有记录。开始一次专注吧。';
+      list.appendChild(empty);
+      return;
     }
+
+    records.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'rec-row' + (r.kind === 'partial' ? ' partial' : '');
+
+      const main = document.createElement('div');
+      main.className = 'rec-main';
+
+      const time = document.createElement('span');
+      time.className = 'rec-time';
+      time.textContent = fmtMinutes(r.seconds);
+
+      const meta = document.createElement('span');
+      meta.className = 'rec-meta';
+      const d = new Date(r.at);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      // 只在不是今天时才显示日期，避免冗长
+      meta.textContent = (r.date === Storage.todayKey() ? '' : r.date.slice(5) + ' ') + hh + ':' + mm;
+
+      const tag = document.createElement('span');
+      tag.className = 'rec-tag' + (r.kind === 'partial' ? ' partial' : '');
+      tag.textContent = r.kind === 'partial' ? '未完成' : '完整';
+
+      main.appendChild(time);
+      main.appendChild(tag);
+      main.appendChild(meta);
+
+      const del = document.createElement('button');
+      del.className = 'rec-del';
+      del.type = 'button';
+      del.title = '删除这条记录';
+      del.setAttribute('aria-label', '删除这条记录');
+      del.textContent = '✕';
+      del.addEventListener('click', () => {
+        if (!confirm('确定删除这条记录吗？\n' + fmtMinutes(r.seconds) + '（' + r.date + '）删除后无法恢复。')) return;
+        Storage.deleteRecord(r.id);
+        renderStats();
+        render(Timer.snapshot());
+        toast('已删除该条记录');
+      });
+
+      row.appendChild(main);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
   }
 
   // ---------- 模态框 ----------
@@ -327,6 +388,18 @@
       renderSettings();
       render(Timer.snapshot());
       toast('已恢复默认设置');
+    });
+
+    // 【新增】清空所有统计数据——独立的破坏性操作，与「重置」语义彻底分开
+    $('btn-clear-stats').addEventListener('click', () => {
+      const n = Storage.getRecords().length;
+      if (!n) { toast('没有可清空的记录'); return; }
+      if (!confirm('确定清空全部 ' + n + ' 条统计数据吗？\n\n此操作无法撤销。')) return;
+      if (!confirm('再次确认：这将永久删除所有专注统计记录。')) return;
+      Storage.clearAll();
+      renderStats();
+      render(Timer.snapshot());
+      toast('已清空所有统计数据');
     });
 
     // 【修复 C】刷新 / 重开页面时恢复本轮进度（12 小时内的快照有效）
