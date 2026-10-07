@@ -15,7 +15,8 @@
  *   3. 导航请求改为 network-first：保证用户能拿到新版 index.html，不会被
  *      cache-first 永久锁死在旧版本。
  * ===================================================================== */
-const CACHE = 'zhuyin-v2';
+// 缓存版本号：每次发版 +1，让老用户能拿到新代码（配合 navigation 的 network-first）
+const CACHE = 'zhuyin-v1.0.1';
 
 const ASSETS = [
   './',
