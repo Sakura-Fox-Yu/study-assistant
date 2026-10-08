@@ -1,2 +1,20 @@
+# pnpm 工作区配置
+#
+# allowBuilds：允许执行安装脚本（postinstall）的包。
+#   electron 需要它来下载运行时二进制。
+#   格式是「映射」：`包名: true`（允许）/ `包名: false`（拒绝）。
+#   这是 pnpm 官方 hint 的写法：allowBuilds: { esbuild: true }
+#   写成 YAML 列表会导致 pnpm-workspace.yaml 解析失败。
 allowBuilds:
   electron: true
+
+# nodeLinker：依赖链接方式。
+#
+# 【为什么必须设成 hoisted】
+#   本机 Windows 未开启「开发者模式」，当前进程也不是管理员，
+#   创建符号链接会失败（"此操作需要管理员权限"）。
+#   pnpm 默认的 isolated 布局完全依赖 symlink，弱权限下会生成空目录，
+#   表现为：顶层 node_modules 为空、Cannot find module '@electron/get'、
+#   electron-builder 找不到 builder-util。
+#   hoisted 模式改用真实目录（npm 风格），不依赖 symlink，因此无需管理员权限。
+nodeLinker: hoisted
