@@ -7,7 +7,8 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "test": "node test_main_logic.js"
   },
   "devDependencies": {
     "electron": "^33.2.0",
@@ -17,6 +18,20 @@
     "appId": "com.linche.zhuyin",
     "productName": "专注节律",
     "directories": { "output": "dist" },
+    "files": [
+      "main.js",
+      "index.html",
+      "manifest.json",
+      "sw.js",
+      "icon.svg",
+      "preview.png",
+      "css/**/*",
+      "js/**/*",
+      "icons/**/*",
+      "!test_main_logic.js",
+      "!dist/**/*",
+      "!node_modules/**/*"
+    ],
     "win": { "target": ["nsis"], "icon": "icons/icon-512.png" },
     "mac": { "target": ["dmg"], "icon": "icons/icon-512.png", "category": "public.app-category.productivity" },
     "linux": { "target": ["AppImage"], "icon": "icons/icon-512.png" }
