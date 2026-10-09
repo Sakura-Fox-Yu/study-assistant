@@ -18,7 +18,7 @@
     cycleCountsFocusOnly: false, // true=按「纯专注时长」计满一个循环；false=按「总时长(含微休息)」计
     autoNext: true,          // 长休息结束后自动进入下一轮
     soundOn: true,           // 是否播放提示音
-    volume: 0.8,             // 音量 0~1
+    volume: 1.0,             // 音量 0~1（默认拉满，嫌吵可在设置里调低）
     showPityCountdown: false, // 专注时是否显示「保底进度条」
     wakeLock: true,          // 是否请求屏幕常亮
     backgroundKeepAlive: true, // 后台保活：切后台时播放极轻底噪，防止音频被挂起导致提示音不响

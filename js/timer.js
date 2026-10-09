@@ -212,15 +212,8 @@
       let guard = 0;
       while (now >= T._phaseEndsAt && guard++ < 20) {
         const endedAt = T._phaseEndsAt;
-        // 把本次被吞掉的时长补记到累计进度里
-        if (T.phase !== 'longRest') {
-          const extra = Math.max(0, endedAt - (now - delta));
-          T._sessionElapsed += extra;
-          if (T.phase === 'focus') {
-            T._focusElapsed += extra;
-            T._focusPeriodElapsed += extra;
-          }
-        }
+        // 【修复】累计时长已在 tick 开头按 delta 正确累加，这里不再重复补记
+        // （旧版 extra 会导致 _sessionElapsed/_focusElapsed 被 double-count 而虚高）。
         T._phaseEndsAt = endedAt + 1; // 防止 advance 后仍 < now 造成死循环
         advance(now);
         // advance 会重设 _phaseEndsAt；若新终点仍早于 now，继续推
@@ -388,11 +381,23 @@
   function rescheduleSound() {
     if (T.phase !== 'focus' && T.phase !== 'microRest' && T.phase !== 'longRest') return;
     emitter.emit('soundCancel');
-    emitEndSound();
+    if (Date.now() >= T._phaseEndsAt) {
+      // 【修复】本阶段已经到期（后台节流导致 tick 没来得及推进）：
+      // 立即推进一次，让状态机跟上，避免「提示音已响但界面还停在上一阶段、休息结束音也丢」。
+      // tick() 内部会重新排定新阶段的声音，无需再 emitEndSound()。
+      tick();
+    } else {
+      emitEndSound();
+    }
+  }
+
+  // 【修复】立即跑一次 tick：供 UI 在回前台/音频恢复时兜底推进状态。
+  function poke() {
+    if (T._timer) tick();
   }
 
   FR.Timer = {
-    start, pause, resume, reset, snapshot, restoreState, rescheduleSound,
+    start, pause, resume, reset, snapshot, restoreState, rescheduleSound, poke,
     persistNow: persist,
     on: emitter.on, emit: emitter.emit,
   };

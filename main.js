@@ -116,6 +116,10 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // 【修复】窗口被遮挡/最小化时，Chromium 默认会节流 JS 定时器，
+      // 导致「提示音准点响、但界面迟迟不进入休息倒计时」。设为 false 禁止节流，
+      // 让 setInterval 始终按时跑（专注计时器必须如此）。
+      backgroundThrottling: false,
     },
   });
 

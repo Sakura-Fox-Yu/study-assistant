@@ -70,7 +70,8 @@
   function currentVolume() {
     const s = FR.settings;
     if (!s || !s.soundOn) return 0;
-    return Math.max(0.0001, Math.min(1, s.volume)) * 0.5; // 上限 0.5 防止过响
+    // 【修复】旧版 * 0.5 把音量砍半，导致提示音偏小。改为直接用 0~1 的设定值。
+    return Math.max(0.0001, Math.min(1, s.volume));
   }
 
   // 刷新锚点：把此刻的墙钟与音频时钟绑定
@@ -90,7 +91,7 @@
     if (!c) return;
     const osc = c.createOscillator();
     const gain = c.createGain();
-    osc.type = 'sine';
+    osc.type = 'triangle'; // 【修复】正弦波太柔和，改三角波（含更多谐波，更响更清晰）
     osc.frequency.value = freq;
     gain.gain.setValueAtTime(0.0001, startAt);
     gain.gain.exponentialRampToValueAtTime(vol, startAt + 0.02);
